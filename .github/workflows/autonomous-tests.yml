@@ -29,6 +29,11 @@ jobs:
           node-version: '18'
           cache: 'npm'
       
+      - name: Install system dependencies for Playwright browsers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgles2 libx264-155 || sudo apt-get install -y libx264-dev
+      
       - name: Install dependencies
         run: npm ci
       
@@ -142,6 +147,11 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
+      
+      - name: Install system dependencies for Playwright browsers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgles2 libx264-155 || sudo apt-get install -y libx264-dev
       
       - name: Install dependencies
         run: npm ci
