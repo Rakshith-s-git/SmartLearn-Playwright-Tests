@@ -55,6 +55,7 @@ jobs:
       - name: Generate Test Report
         if: always()
         run: |
+          mkdir -p test-reports
           echo "Test execution completed at $(date)" > test-reports/execution.log
       
       - name: Upload Test Results
@@ -166,6 +167,7 @@ jobs:
       - name: Generate Performance Report
         if: always()
         run: |
+          mkdir -p test-reports
           echo "Performance report generation" >> test-reports/performance.log
       
       - name: Upload Comprehensive Results
