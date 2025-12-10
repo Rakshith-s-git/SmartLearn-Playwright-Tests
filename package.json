@@ -1,0 +1,13 @@
+{
+  "name": "smartlearn-playwright",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:headed": "npx playwright test --headed",
+    "test:report": "npx playwright show-report",
+    "test:debug": "NODE_OPTIONS='--inspect-brk' npx playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.35.0"
+  }
+}

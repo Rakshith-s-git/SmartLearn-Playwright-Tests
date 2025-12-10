@@ -1,0 +1,7 @@
+
+node_modules/
+test-results/
+allure-report/
+.idea/
+.vscode/
+npm-debug.log

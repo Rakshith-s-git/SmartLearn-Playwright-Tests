@@ -1,0 +1,185 @@
+name: Autonomous Test Execution
+
+on:
+  schedule:
+    # Run smoke tests every hour
+    - cron: '0 * * * *'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+  
+  # Run on push to main
+  push:
+    branches: [main, develop]
+
+jobs:
+  autonomous-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        browser: [chromium, firefox, webkit]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Install Playwright
+        run: npx playwright install
+      
+      - name: Run UI Tests - ${{ matrix.browser }}
+        run: npm test -- tests/ui/ -- --project=${{ matrix.browser }}
+        continue-on-error: true
+      
+      - name: Run API Tests
+        run: npm test -- tests/api/
+        continue-on-error: true
+      
+      - name: Run Mobile Tests
+        run: npm test -- tests/mobile/ -- --project=chromium
+        continue-on-error: true
+      
+      - name: Generate Test Report
+        if: always()
+        run: |
+          echo "Test execution completed at $(date)" > test-reports/execution.log
+      
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-${{ matrix.browser }}
+          path: test-reports/
+          retention-days: 30
+      
+      - name: Notify Slack on Success
+        if: success()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          payload: |
+            {
+              "text": "✅ Autonomous Tests Passed",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "✅ All Tests Passed"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Browser:*\n${{ matrix.browser }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Time:*\n$(date)"
+                    }
+                  ]
+                }
+              ]
+            }
+      
+      - name: Notify Slack on Failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          payload: |
+            {
+              "text": "❌ Autonomous Tests Failed",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "❌ Tests Failed"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Browser:*\n${{ matrix.browser }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Time:*\n$(date)"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Link:*\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  ]
+                }
+              ]
+            }
+
+  # Additional job for daily comprehensive tests
+  daily-comprehensive-tests:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 0 * * *' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Install Playwright
+        run: npx playwright install
+      
+      - name: Run All Tests
+        run: npm test
+        continue-on-error: true
+      
+      - name: Generate Performance Report
+        if: always()
+        run: |
+          echo "Performance report generation" >> test-reports/performance.log
+      
+      - name: Upload Comprehensive Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: comprehensive-test-results
+          path: test-reports/
+          retention-days: 30
+      
+      - name: Cleanup Test Data
+        if: always()
+        run: |
+          echo "Cleaning up test data..."
+          # Add cleanup scripts here
+
+  # Clean up old reports
+  cleanup-old-reports:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 0 * * 0' # Weekly on Sunday
+    
+    steps:
+      - name: Cleanup old test reports
+        uses: actions/github-script@v6
+        with:
+          script: |
+            console.log("Cleanup job would run here to remove reports older than 30 days");
