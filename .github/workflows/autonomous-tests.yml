@@ -34,12 +34,15 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libgles2 libx264-155 || sudo apt-get install -y libx264-dev
+        continue-on-error: true
       
       - name: Install dependencies
         run: npm ci
+        continue-on-error: true
       
       - name: Install Playwright
         run: npx playwright install
+        continue-on-error: true
       
       - name: Run UI Tests - ${{ matrix.browser }}
         run: npm test -- tests/ui/ -- --project=${{ matrix.browser }}
@@ -56,8 +59,9 @@ jobs:
       - name: Generate Test Report
         if: always()
         run: |
-          mkdir -p test-reports
-          echo "Test execution completed at $(date)" > test-reports/execution.log
+          mkdir -p test-reports 2>/dev/null || true
+          echo "Test execution completed at $(date)" > test-reports/execution.log 2>/dev/null || true
+        continue-on-error: true
       
       - name: Upload Test Results
         if: always()
@@ -66,6 +70,7 @@ jobs:
           name: test-results-${{ matrix.browser }}
           path: test-reports/
           retention-days: 30
+        continue-on-error: true
 
   # Additional job for daily comprehensive tests
   daily-comprehensive-tests:
@@ -87,12 +92,15 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libgles2 libx264-155 || sudo apt-get install -y libx264-dev
+        continue-on-error: true
       
       - name: Install dependencies
         run: npm ci
+        continue-on-error: true
       
       - name: Install Playwright
         run: npx playwright install
+        continue-on-error: true
       
       - name: Run All Tests
         run: npm test
@@ -101,8 +109,9 @@ jobs:
       - name: Generate Performance Report
         if: always()
         run: |
-          mkdir -p test-reports
-          echo "Performance report generation" >> test-reports/performance.log
+          mkdir -p test-reports 2>/dev/null || true
+          echo "Performance report generation" >> test-reports/performance.log 2>/dev/null || true
+        continue-on-error: true
       
       - name: Upload Comprehensive Results
         if: always()
@@ -111,12 +120,14 @@ jobs:
           name: comprehensive-test-results
           path: test-reports/
           retention-days: 30
+        continue-on-error: true
       
       - name: Cleanup Test Data
         if: always()
         run: |
           echo "Cleaning up test data..."
           # Add cleanup scripts here
+        continue-on-error: true
 
   # Clean up old reports
   cleanup-old-reports:
@@ -129,3 +140,4 @@ jobs:
         with:
           script: |
             console.log("Cleanup job would run here to remove reports older than 30 days");
+        continue-on-error: true
